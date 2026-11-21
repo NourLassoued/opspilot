@@ -40,6 +40,6 @@ kubectl -n argocd patch application jobradar --type merge \
 | Panne | Cause correcte | Vrais noms ? | Dernière version saine ? | Correction GitOps ? | Appels d'outils | Temps |
 |---|---|---|---|---|---|---|
 | Image introuvable (S1) | ✅ | — | ❌ (`latest`) | ❌ | 0 (fixe) | 3,1 s |
-| Image introuvable (S2) | | | | | | |
+| Image introuvable (S2) | ✅ | ✅ | ✅ 0.1.1 (rév. 8) | ✅ (commit Git, SHA inconnu) | 3 | 8,1 s |
 | Base injoignable (S1) | ✅ | ❌ (POSTGRES_HOST) | — | ❌ | 0 (fixe) | 2,7 s |
-| Base injoignable (S2) | | | | | | |
+| Base injoignable (S2) | ✅ | ✅ SPRING_DATASOURCE_URL | ✅ 0.1.1 | ✅ (chemin du fichier générique) | 5 | 53,7 s (limite Groq) |

@@ -19,7 +19,10 @@ def print_step(node: str, data: dict) -> None:
             args = ", ".join(f"{k}={v}" for k, v in call["args"].items())
             print(f"  🔧 {call['name']}({args})")
         if node == "tools":
-            preview = str(msg.content).strip().splitlines()[0][:110] if msg.content else ""
+            content = msg.content
+            if isinstance(content, list):  # format MCP : [{"type": "text", "text": "..."}]
+                content = " ".join(part.get("text", "") for part in content if isinstance(part, dict))
+            preview = str(content).strip().splitlines()[0][:110] if content else ""
             print(f"     ↳ {preview}")
     if node == "diagnose":
         print("  🧠 Rédaction du diagnostic…")

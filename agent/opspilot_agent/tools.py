@@ -15,7 +15,8 @@ MCP_DIR = Path(__file__).resolve().parents[2] / "mcp-servers"
 
 def mcp_connections() -> dict:
     """Chaque serveur MCP est un petit programme Python lancé par l'agent (transport stdio)."""
-    env = dict(os.environ)  # transmet KUBECONFIG, HOME, PROMETHEUS_URL...
+    # transmet KUBECONFIG, HOME, PROMETHEUS_URL... (sans les variables du prompt du terminal)
+    env = {k: v for k, v in os.environ.items() if k not in ("PS1", "PS2", "PROMPT_COMMAND")}
     return {
         "k8s": {"transport": "stdio", "command": sys.executable,
                 "args": [str(MCP_DIR / "k8s_inspector" / "server.py")], "env": env},
