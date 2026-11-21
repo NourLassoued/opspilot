@@ -39,4 +39,4 @@ ArgoCD remet alors tout comme décrit dans Git.
 | Panne | Catégorie trouvée | Cause correcte ? | Temps | Notes |
 |---|---|---|---|---|
 | Image introuvable | image | ✅ oui (confiance 0,96) | 3,1 s | Preuves exactes ; correction non GitOps (propose `latest` et `kubectl set image`) → à améliorer aux Sprints 2-3 |
-| Base injoignable | | | | |
+| Base injoignable | config | ✅ oui (confiance 0,96) | 2,7 s | Preuve trouvée dans les logs précédents (UnknownHostException) ; invente des noms (POSTGRES_HOST, ConfigMap) car ne voit pas la config du Deployment ; commandes dans suggested_fix au lieu de fix_commands |
