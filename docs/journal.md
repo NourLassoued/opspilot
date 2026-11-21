@@ -23,6 +23,20 @@ Une seule panne (image inexistante) a déclenché 5 alertes (PodImagePullFailed,
 KubePodNotReady, KubeContainerWaiting, TargetDown) → l'agent devra regrouper les alertes
 et remonter à une cause unique (le commit fautif).
 
-## Sprint 1 — MVP de l'agent
+## Sprint 1 — MVP de l'agent (terminé le 21/11/2026)
 
-- …
+- Graphe LangGraph fixe : collecter (client Kubernetes) → diagnostiquer (LLM, sortie structurée Pydantic).
+- LLM : `openai/gpt-oss-120b` (open-weight) via Groq, gratuit. `llama-3.3-70b-versatile` retiré par Groq → modèle
+  configurable dans `.env`, changé sans toucher au code.
+- Résultats : 2/2 causes correctes (image introuvable 3,1 s ; base injoignable 2,7 s, preuve trouvée dans les logs
+  d'avant le crash).
+- Limites observées : noms inventés (POSTGRES_HOST), tag `latest` proposé, corrections non GitOps
+  → l'agent ne voyait ni la config du Deployment ni l'historique des versions.
+
+## Sprint 2 — Outils MCP et enquête autonome
+
+- 2 serveurs MCP (k8s_inspector : 5 outils ; prom_inspector : 2 outils), lecture seule, Secrets masqués.
+- Boucle d'enquête : l'IA choisit ses outils ; garde-fou de 12 appels ; erreurs d'outils non bloquantes.
+- Consignes renforcées : ne jamais inventer de nom, correction GitOps, jamais `latest`.
+- RBAC lecture seule pour l'agent (deploy/rbac).
+- Résultats : voir evaluation/sprint2-scenarios.md
