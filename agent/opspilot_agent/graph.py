@@ -34,7 +34,7 @@ class AgentState(TypedDict, total=False):
 def build_llm():
     from langchain_groq import ChatGroq
 
-    return ChatGroq(model=os.getenv("LLM_MODEL", "llama-3.3-70b-versatile"), temperature=0)
+    return ChatGroq(model=os.getenv("LLM_MODEL", "openai/gpt-oss-120b"), temperature=0)
 
 
 def build_graph(

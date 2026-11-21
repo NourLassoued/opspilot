@@ -38,5 +38,5 @@ ArgoCD remet alors tout comme décrit dans Git.
 
 | Panne | Catégorie trouvée | Cause correcte ? | Temps | Notes |
 |---|---|---|---|---|
-| Image introuvable | | | | |
+| Image introuvable | image | ✅ oui (confiance 0,96) | 3,1 s | Preuves exactes ; correction non GitOps (propose `latest` et `kubectl set image`) → à améliorer aux Sprints 2-3 |
 | Base injoignable | | | | |
