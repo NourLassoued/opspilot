@@ -23,6 +23,17 @@ que l'agent lance lui-même (transport stdio). Tous sont en **lecture seule**.
 Prometheus doit être joignable (port-forward) :
 `kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-prometheus 9090`
 
+## gitops_inspector
+
+| Outil | Rôle |
+|---|---|
+| `get_argocd_application(name)` | Dépôt suivi, Synced/OutOfSync, santé, synchro auto, historique des déploiements |
+| `list_git_commits(repo_url, path)` | Derniers commits du dépôt GitOps |
+| `get_git_commit_diff(repo_url, sha)` | Lignes modifiées par un commit (preuve) |
+
+ArgoCD est lu via l'API Kubernetes (pas de mot de passe ArgoCD). GitHub via son API publique
+(`GITHUB_TOKEN` optionnel).
+
 ## Sécurité
 
 - Aucune écriture dans le cluster.

@@ -22,6 +22,8 @@ def mcp_connections() -> dict:
                 "args": [str(MCP_DIR / "k8s_inspector" / "server.py")], "env": env},
         "prometheus": {"transport": "stdio", "command": sys.executable,
                        "args": [str(MCP_DIR / "prom_inspector" / "server.py")], "env": env},
+        "gitops": {"transport": "stdio", "command": sys.executable,
+                   "args": [str(MCP_DIR / "gitops_inspector" / "server.py")], "env": env},
     }
 
 

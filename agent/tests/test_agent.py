@@ -92,3 +92,58 @@ async def test_unknown_tool_error_does_not_crash():
     llm = ScriptedLLM([ai_call("outil_inexistant", {}, "1"), AIMessage(content="ok")])
     result = await build_graph([list_pods], llm).ainvoke(initial_state("jobradar", ""))
     assert result["diagnosis"] is not None
+
+
+# ---------- Sprint 3 : validation humaine avant réparation ----------
+import uuid
+
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.types import Command
+
+from opspilot_agent.graph import run_graph
+from opspilot_agent.models import Remediation
+
+REVERT = Remediation(action="git_revert", repo_url="https://github.com/NourLassoued/jobradar-gitops",
+                     commit_sha="bc8d19e", file_path="base/backend.yaml", explanation="Le commit a mis l'image 9.9.9.")
+
+
+class RevertLLM(ScriptedLLM):
+    def with_structured_output(self, schema):
+        diag = DIAG.model_copy(update={"remediation": REVERT})
+
+        class _S:
+            async def ainvoke(self, messages):
+                return diag
+
+        return _S()
+
+
+async def _run(allow_actions, decision):
+    executed = []
+    graph = build_graph([list_pods], RevertLLM([AIMessage(content="fini")]), allow_actions=allow_actions,
+                        executor=lambda r: executed.append(r.commit_sha) or "ok", checkpointer=InMemorySaver())
+    config = {"configurable": {"thread_id": str(uuid.uuid4())}}
+    final: dict = {}
+    request = await run_graph(graph, initial_state("jobradar", ""), config, None, final)
+    if request is not None:
+        await run_graph(graph, Command(resume=decision), config, None, final)
+    return request, executed, final
+
+
+async def test_action_waits_for_human_and_runs_when_approved():
+    request, executed, final = await _run(allow_actions=True, decision=True)
+    assert request["remediation"]["commit_sha"] == "bc8d19e"  # le graphe s'est mis en pause
+    assert executed == ["bc8d19e"]
+    assert final["action_result"] == "ok"
+
+
+async def test_refused_action_is_not_executed():
+    request, executed, final = await _run(allow_actions=True, decision=False)
+    assert request is not None
+    assert executed == []
+    assert "refusée" in final["action_result"]
+
+
+async def test_no_action_without_permission():
+    request, executed, final = await _run(allow_actions=False, decision=True)
+    assert request is None and executed == []

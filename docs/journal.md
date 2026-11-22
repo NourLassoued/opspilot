@@ -39,4 +39,14 @@ et remonter à une cause unique (le commit fautif).
 - Boucle d'enquête : l'IA choisit ses outils ; garde-fou de 12 appels ; erreurs d'outils non bloquantes.
 - Consignes renforcées : ne jamais inventer de nom, correction GitOps, jamais `latest`.
 - RBAC lecture seule pour l'agent (deploy/rbac).
-- Résultats : voir evaluation/sprint2-scenarios.md
+- Résultats : 2/2 causes ; vrais noms (SPRING_DATASOURCE_URL) ; version saine 0.1.1 retrouvée ; corrections GitOps.
+  Reste : SHA du commit et chemin du fichier inconnus (pas d'accès Git) ; 53,7 s sur la panne 2 (limite Groq).
+
+## Sprint 3 — Lien GitOps et réparation avec validation humaine
+
+- Serveur MCP gitops_inspector : application ArgoCD (via l'API Kubernetes) + historique et diff Git (API GitHub).
+- L'agent distingue un mauvais commit (Synced → git_revert du SHA prouvé par le diff)
+  d'une modification manuelle (OutOfSync + synchro désactivée → argocd_sync).
+- Validation humaine : pause du graphe LangGraph (interrupt + checkpointer) avant toute action.
+- Réparations en liste blanche, hors de portée de l'IA ; testées sur de vrais dépôts Git temporaires.
+- Résultats : voir evaluation/sprint3-scenarios.md
