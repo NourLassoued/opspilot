@@ -44,4 +44,4 @@ Attendu : OutOfSync + synchro désactivée → `argocd_sync` ; après « oui »,
 | Scénario | Cause | Origine trouvée | SHA/réparation correcte | Réparation exécutée | Outils | Temps |
 |---|---|---|---|---|---|---|
 | A — mauvais commit | ✅ image 9.9.9 | ✅ commit Git (Synced) | ✅ 7117d0b, base/backend.yaml, 0.1.1 | ✅ revert 860ad2c poussé, ArgoCD a redéployé | 4 | — |
-| B — dérive manuelle | | | | | | |
+| B — dérive manuelle | ✅ SPRING_DATASOURCE_URL (postgres-inexistant) | ✅ OutOfSync + synchro désactivée | ✅ argocd_sync (pas de git_revert) | ✅ synchro ciblée Deployment/jobradar-backend, sans suppression | 6 | — |
