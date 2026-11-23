@@ -32,13 +32,17 @@ Méthode :
 2. get_pod_events, puis get_pod_logs (previous=True si le pod a redémarré).
 3. get_deployment_config pour les vrais noms de variables et l'image ; get_rollout_history pour la dernière version saine.
 4. get_argocd_application (l'application porte en général le nom du namespace) pour savoir d'où vient le changement.
-5. Choisis la réparation :
+5. D'abord : y a-t-il VRAIMENT une panne ? Si tous les pods sont Running et prêts (ex. 1/1), sans redémarrage,
+   sans événement d'erreur, et que l'application ArgoCD est Synced + Healthy → il n'y a RIEN à réparer :
+   category = "none", remediation.action = "none". Une alerte reçue ne prouve pas à elle seule une panne.
+   Un commit déjà annulé par un commit plus récent ("Revert ...") n'est PAS une cause : ne le revert jamais.
+6. S'il y a une vraie panne, choisis la réparation :
    - Application OutOfSync avec synchro automatique DÉSACTIVÉE → quelqu'un a modifié le cluster à la main (dérive) :
      remediation.action = "argocd_sync" (Git a raison, on remet le cluster comme dans Git).
    - Application Synced → le changement fautif vient de Git : list_git_commits(repo_url, path) puis
      get_git_commit_diff pour PROUVER le commit fautif → remediation.action = "git_revert" avec son SHA court.
    - Sinon → "manual".
-6. Arrête-toi dès que la cause et la réparation sont prouvées : pas d'appels inutiles.
+7. Arrête-toi dès que la cause et la réparation sont prouvées : pas d'appels inutiles.
 
 Règles :
 - N'invente JAMAIS un nom, un chemin de fichier ou un SHA que tu n'as pas vu dans un résultat d'outil.
@@ -96,8 +100,27 @@ def build_graph(
         messages = list(state["messages"])
         if isinstance(messages[-1], AIMessage) and messages[-1].tool_calls:
             messages = messages[:-1]  # limite atteinte : on retire la demande d'outil restée sans réponse
-        structured = llm.with_structured_output(Diagnosis)
-        return {"diagnosis": await structured.ainvoke([*messages, HumanMessage(FINAL_INSTRUCTION)])}
+        prompt = [*messages, HumanMessage(FINAL_INSTRUCTION)]
+        error = None
+        # 1) json_schema : le modèle renvoie directement le JSON (le plus fiable avec gpt-oss sur Groq)
+        # 2) et 3) function_calling : l'ancienne méthode, en secours, avec un rappel du format
+        for method in ("json_schema", "function_calling", "function_calling"):
+            try:
+                diagnosis = await llm.with_structured_output(Diagnosis, method=method).ainvoke(prompt)
+                if isinstance(diagnosis, Diagnosis):
+                    return {"diagnosis": diagnosis}
+                raise ValueError(f"réponse inattendue : {type(diagnosis).__name__}")
+            except Exception as exc:
+                error = exc
+                prompt = [*prompt, HumanMessage("Ta réponse ne respectait pas le format. Réessaie : "
+                                                "remplis TOUS les champs du diagnostic, en particulier root_cause.")]
+        # Échec à chaque essai : diagnostic de secours, sans action (jamais de réparation sur un échec)
+        return {"diagnosis": Diagnosis(
+            category="unknown",
+            root_cause=f"Le modèle n'a pas pu produire un diagnostic valide : {str(error)[:300]}",
+            confidence=0,
+            suggested_fix="Relancer l'enquête ou analyser manuellement.",
+        )}
 
     def route_after_diagnosis(state: AgentState) -> str:
         diag = state.get("diagnosis")

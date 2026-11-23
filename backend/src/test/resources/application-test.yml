@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:opspilot;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password: ""
+
+opspilot:
+  agent:
+    url: http://localhost:65535   # jamais appelé : l'agent est simulé dans les tests
+    token: test-agent-token
+  alertmanager:
+    token: test-am-token
+  investigation:
+    async: false                  # enquête synchrone : les tests vérifient le résultat tout de suite
+  security:
+    admin:
+      username: admin
+      password: admin-pass
+    viewer:
+      username: viewer
+      password: viewer-pass

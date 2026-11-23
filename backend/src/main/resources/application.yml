@@ -1,0 +1,47 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: opspilot-backend
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/opspilot}
+    username: ${DB_USER:opspilot}
+    password: ${DB_PASSWORD:opspilot}
+  jpa:
+    hibernate:
+      ddl-auto: none        # le schéma est géré par Flyway (db/migration)
+    open-in-view: false
+  flyway:
+    enabled: true
+
+opspilot:
+  agent:
+    url: ${AGENT_URL:http://localhost:8000}
+    token: ${AGENT_API_TOKEN:}             # même valeur que AGENT_API_TOKEN dans agent/.env
+    timeout-seconds: 240                    # une enquête peut durer jusqu'à ~1 minute (limites Groq)
+  alertmanager:
+    token: ${ALERTMANAGER_TOKEN:change-me}  # jeton attendu dans l'en-tête Authorization du webhook
+  investigation:
+    async: true
+  security:
+    admin:
+      username: ${ADMIN_USER:admin}
+      password: ${ADMIN_PASSWORD:admin}
+    viewer:
+      username: ${VIEWER_USER:viewer}
+      password: ${VIEWER_PASSWORD:viewer}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

@@ -49,4 +49,28 @@ et remonter à une cause unique (le commit fautif).
   d'une modification manuelle (OutOfSync + synchro désactivée → argocd_sync).
 - Validation humaine : pause du graphe LangGraph (interrupt + checkpointer) avant toute action.
 - Réparations en liste blanche, hors de portée de l'IA ; testées sur de vrais dépôts Git temporaires.
+- Revue de sécurité : `argocd_sync` réactivait la synchro auto avec `prune: true` (risque de suppression,
+  ex. base de données si un manifest disparaît de Git). Corrigé : une seule synchro, uniquement des
+  ressources OutOfSync, `prune: false`, synchro auto laissée à la décision humaine.
 - Résultats : voir evaluation/sprint3-scenarios.md
+
+## Sprint 4 — Backend Spring Boot (incidents)
+
+- Webhook Alertmanager protégé par jeton ; alertes regroupées par namespace (pas de doublon d'incident).
+- Incidents et étapes de l'agent enregistrés dans PostgreSQL (Flyway) ; suivi temps réel en SSE.
+- Rôles : VIEWER lit, ADMIN approuve/refuse. L'agent n'agit qu'après `/approve`,
+  via `/remediate` protégé par un second jeton (AGENT_API_TOKEN).
+- Tests d'intégration (MockMvc, agent simulé) : jeton invalide, regroupement, 403 viewer,
+  double approbation (409), refus, agent en panne (FAILED).
+- Résultats : voir evaluation/sprint4-scenarios.md
+- Incident réel au premier test : le modèle gratuit (Groq) oubliait le champ `root_cause` quand tout allait
+  bien → erreur 400 → agent en 500 → incident FAILED (le backend a bien géré l'échec).
+  Correction : champs du diagnostic tolérants, nouvel essai automatique, diagnostic de secours
+  `unknown` sans aucune action. 3 tests ajoutés (18 au total).
+- Faux positif au test suivant (système sain, alerte de test) : l'agent a proposé de revert 7117d0b,
+  commit DÉJÀ annulé par 860ad2c. L'humain a refusé (rôle de la validation humaine).
+  Corrections : règle « pas de panne → none » dans les consignes + garde-fou dans git_revert
+  (refus si le commit a déjà été annulé). Test ajouté (19 au total).
+- 3e test : le diagnostic de secours a fonctionné (category unknown, aucune action) car gpt-oss a
+  appelé un outil « json » inexistant. Correction : sortie structurée en mode `json_schema`
+  (le modèle renvoie le JSON directement), puis `function_calling` en secours (3 essais au total).

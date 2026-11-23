@@ -43,7 +43,7 @@ class ScriptedLLM:
     def bind_tools(self, tools):
         return self
 
-    def with_structured_output(self, schema):
+    def with_structured_output(self, schema, **kwargs):
         assert schema is Diagnosis
         outer = self
 
@@ -108,7 +108,7 @@ REVERT = Remediation(action="git_revert", repo_url="https://github.com/NourLasso
 
 
 class RevertLLM(ScriptedLLM):
-    def with_structured_output(self, schema):
+    def with_structured_output(self, schema, **kwargs):
         diag = DIAG.model_copy(update={"remediation": REVERT})
 
         class _S:
@@ -147,3 +147,48 @@ async def test_refused_action_is_not_executed():
 async def test_no_action_without_permission():
     request, executed, final = await _run(allow_actions=False, decision=True)
     assert request is None and executed == []
+
+
+class FlakyStructured:
+    """Faux LLM dont la sortie structurée échoue `fails` fois (comme l'erreur 400 de Groq)."""
+
+    def __init__(self, fails):
+        self.fails = fails
+        self.calls = 0
+
+    def bind_tools(self, tools):
+        return self
+
+    def with_structured_output(self, schema, **kwargs):
+        outer = self
+
+        class _S:
+            async def ainvoke(self, messages):
+                outer.calls += 1
+                if outer.calls <= outer.fails:
+                    raise ValueError("missing properties: 'root_cause'")
+                return DIAG
+
+        return _S()
+
+    async def ainvoke(self, messages):
+        return AIMessage(content="Fini.")
+
+
+async def test_diagnosis_retries_once_after_format_error():
+    llm = FlakyStructured(fails=1)
+    result = await build_graph([list_pods], llm).ainvoke(initial_state("jobradar", "Test"))
+    assert llm.calls == 2
+    assert result["diagnosis"].category == "config"
+
+
+async def test_diagnosis_fallback_never_proposes_action():
+    llm = FlakyStructured(fails=5)
+    result = await build_graph([list_pods], llm).ainvoke(initial_state("jobradar", "Test"))
+    assert result["diagnosis"].category == "unknown"
+    assert result["diagnosis"].remediation is None
+
+
+def test_missing_root_cause_is_filled():
+    d = Diagnosis.model_validate({"category": "none", "remediation": {"action": "none"}})
+    assert d.root_cause.startswith("Aucun problème")

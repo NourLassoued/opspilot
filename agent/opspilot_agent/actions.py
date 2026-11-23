@@ -43,6 +43,10 @@ def git_revert(remediation: Remediation) -> str:
 
     _git(repo, "pull", "--ff-only")
     _git(repo, "cat-file", "-e", f"{sha}^{{commit}}")
+    full_sha = _git(repo, "rev-parse", f"{sha}^{{commit}}")
+    if _git(repo, "log", "--format=%h", f"--grep=This reverts commit {full_sha}"):
+        # Garde-fou : ne jamais annuler deux fois le même commit (l'IA peut se tromper).
+        raise ValueError(f"Le commit {sha} a déjà été annulé : rien à faire, réparation refusée.")
     try:
         _git(repo, "revert", "--no-edit", sha)
     except RuntimeError:

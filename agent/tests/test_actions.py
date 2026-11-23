@@ -42,6 +42,7 @@ def test_unknown_action_is_rejected():
     with pytest.raises(ValueError):
         actions.execute(Remediation(action="manual", explanation="x"))
 
+
 class FakeArgo:
     def __init__(self, resources, operation=None):
         self.app = {"spec": {"source": {"targetRevision": "main"}, "syncPolicy": None},
@@ -72,3 +73,12 @@ def test_argocd_sync_does_nothing_without_drift():
     argo = FakeArgo([{"kind": "Deployment", "name": "jobradar-backend", "status": "Synced"}])
     actions.argocd_sync(Remediation(action="argocd_sync", argocd_app="jobradar", explanation="x"), api=argo)
     assert argo.patches == []
+
+
+def test_already_reverted_commit_is_refused(gitops_clone):
+    clone, remote, bad_sha = gitops_clone
+    actions.execute(Remediation(action="git_revert", commit_sha=bad_sha, explanation="1re fois"))
+    pushed = git(remote, "rev-parse", "HEAD")
+    with pytest.raises(ValueError, match="déjà été annulé"):
+        actions.execute(Remediation(action="git_revert", commit_sha=bad_sha, explanation="2e fois"))
+    assert git(remote, "rev-parse", "HEAD") == pushed  # rien de nouveau poussé
