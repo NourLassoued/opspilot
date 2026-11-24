@@ -1,0 +1,11 @@
+@if (auth.isLoggedIn()) {
+  <nav class="topbar">
+    <a routerLink="/incidents" class="brand"><span class="logo">◆</span> OpsPilot</a>
+    <div class="who">
+      <span class="role" [class.admin]="auth.isAdmin()">{{ auth.isAdmin() ? 'admin' : 'lecture seule' }}</span>
+      <span>{{ auth.user() }}</span>
+      <button class="btn btn-ghost btn-sm" (click)="auth.logout()">Déconnexion</button>
+    </div>
+  </nav>
+}
+<router-outlet />

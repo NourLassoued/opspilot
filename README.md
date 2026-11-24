@@ -21,6 +21,8 @@ et propose une correction. **Aucune action n'est exécutée sans validation huma
 [JobRadar](https://github.com/NourLassoued/JobRadar), déployée en GitOps avec ArgoCD
 depuis [jobradar-gitops](https://github.com/NourLassoued/jobradar-gitops).
 
-## Démarrage rapide de l'agent
+## Démarrage rapide
 
-Voir [`agent/README.md`](agent/README.md).
+1. Agent : [`agent/README.md`](agent/README.md) — `uvicorn opspilot_agent.api:app --port 8000`
+2. Backend : [`backend/README.md`](backend/README.md) — `mvn spring-boot:run` (port 8090)
+3. Dashboard : [`frontend/README.md`](frontend/README.md) — `npm start` puis http://localhost:4200

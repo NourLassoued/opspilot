@@ -1,0 +1,107 @@
+<section class="page">
+  <a routerLink="/incidents" class="back">← Tous les incidents</a>
+
+  @if (error()) {
+    <p class="alert alert-bad" role="alert">{{ error() }}</p>
+  }
+
+  @if (incident(); as i) {
+    <header class="page-head">
+      <div>
+        <h1>Incident #{{ i.id }} <app-status-badge [status]="i.status" /></h1>
+        <p class="muted">
+          <span class="mono">{{ i.namespace }}</span> · {{ i.alerts.join(', ') }} · {{ i.createdAt | date: 'dd/MM/yyyy HH:mm:ss' }}
+        </p>
+      </div>
+    </header>
+
+    @if (i.status === 'INVESTIGATING') {
+      <div class="card notice"><span class="spinner"></span> L'agent IA enquête sur le cluster… la page se mettra à jour toute seule.</div>
+    }
+
+    <!-- 1. Décision humaine -->
+    @if (i.remediation && i.remediation.action !== 'none') {
+      <div class="card decision" [class.pending]="i.status === 'AWAITING_APPROVAL'">
+        <h2>Réparation proposée</h2>
+        <p class="action">{{ actions[i.remediation.action] ?? i.remediation.action }}
+          @if (i.remediation.commit_sha) { : commit <code>{{ i.remediation.commit_sha }}</code> }
+          @if (i.remediation.file_path) { dans <code>{{ i.remediation.file_path }}</code> }
+          @if (i.remediation.argocd_app) { — application <code>{{ i.remediation.argocd_app }}</code> }
+        </p>
+        <p>{{ i.remediation.explanation }}</p>
+
+        @if (canDecide()) {
+          <div class="buttons">
+            <button class="btn btn-ok" (click)="approve()" [disabled]="deciding()">✓ Approuver</button>
+            <button class="btn btn-ghost" (click)="reject()" [disabled]="deciding()">✕ Refuser</button>
+          </div>
+          <p class="hint">Vérifie le commit et les preuves ci-dessous avant d'approuver. L'IA peut se tromper.</p>
+        } @else if (i.status === 'AWAITING_APPROVAL') {
+          <p class="hint">En attente d'un administrateur (tu es connecté en lecture seule).</p>
+        }
+
+        @if (i.decidedBy) {
+          <p class="hint">Décidé par <b>{{ i.decidedBy }}</b> le {{ i.decidedAt | date: 'dd/MM/yyyy HH:mm:ss' }}</p>
+        }
+      </div>
+    }
+
+    @if (i.actionResult) {
+      <p class="alert" [class.alert-ok]="i.status === 'RESOLVED'" [class.alert-bad]="i.status === 'FAILED'">{{ i.actionResult }}</p>
+    }
+    @if (i.errorMessage) {
+      <p class="alert alert-bad">{{ i.errorMessage }}</p>
+    }
+
+    <div class="grid">
+      <!-- 2. Diagnostic -->
+      @if (i.diagnosis; as d) {
+        <div class="card">
+          <h2>Diagnostic</h2>
+          <p><span class="tag">{{ categories[d.category] ?? d.category }}</span></p>
+          <p class="cause-lg">{{ d.root_cause }}</p>
+          <div class="confidence" [attr.title]="'Confiance ' + (d.confidence * 100 | number: '1.0-0') + ' %'">
+            <span>Confiance</span>
+            <div class="bar"><div [style.width.%]="d.confidence * 100"></div></div>
+            <b>{{ d.confidence * 100 | number: '1.0-0' }} %</b>
+          </div>
+          @if (d.suggested_fix) {
+            <h3>Correction suggérée</h3>
+            <p>{{ d.suggested_fix }}</p>
+          }
+          @if (d.last_known_good) {
+            <p class="muted">Dernière version saine : <code>{{ d.last_known_good }}</code></p>
+          }
+          @if (d.evidence.length) {
+            <h3>Preuves (recopiées des outils)</h3>
+            @for (e of d.evidence; track $index) {
+              <pre class="evidence">{{ e }}</pre>
+            }
+          }
+        </div>
+      }
+
+      <!-- 3. Enquête de l'agent -->
+      <div class="card">
+        <h2>Enquête de l'agent</h2>
+        @if (i.toolCalls != null) {
+          <p class="muted">{{ i.toolCalls }} outils · {{ i.durationSeconds | number: '1.0-1' }} s</p>
+        }
+        @if (toolSteps().length) {
+          <ol class="timeline">
+            @for (s of toolSteps(); track s.order) {
+              <li>
+                <span class="mono tool">{{ s.tool }}</span>
+                <span class="mono args">{{ args(s.args) }}</span>
+              </li>
+            }
+          </ol>
+        } @else {
+          <p class="muted">Aucune étape pour l'instant.</p>
+        }
+      </div>
+    </div>
+  } @else if (!error()) {
+    <p class="muted center">Chargement…</p>
+  }
+</section>

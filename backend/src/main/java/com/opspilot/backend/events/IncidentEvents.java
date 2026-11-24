@@ -29,6 +29,12 @@ public class IncidentEvents {
         emitter.onCompletion(() -> emitters.remove(emitter));
         emitter.onTimeout(() -> emitters.remove(emitter));
         emitter.onError(e -> emitters.remove(emitter));
+        try {
+            // Premier message : le navigateur sait tout de suite que le flux est bien connecté.
+            emitter.send(SseEmitter.event().name("ready").data("ok"));
+        } catch (Exception e) {
+            emitters.remove(emitter);
+        }
         return emitter;
     }
 

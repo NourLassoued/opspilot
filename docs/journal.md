@@ -74,3 +74,20 @@ et remonter à une cause unique (le commit fautif).
 - 3e test : le diagnostic de secours a fonctionné (category unknown, aucune action) car gpt-oss a
   appelé un outil « json » inexistant. Correction : sortie structurée en mode `json_schema`
   (le modèle renvoie le JSON directement), puis `function_calling` en secours (3 essais au total).
+
+## Sprint 5 — Dashboard Angular + connexion JWT
+
+- Backend : `/api/auth/login` renvoie un jeton JWT signé (HMAC SHA-256, 60 min) avec les rôles ;
+  Spring Security le vérifie à chaque requête (resource server). HTTP Basic gardé pour curl.
+  5 tests : rôles, mauvais mot de passe (401), accès par jeton, viewer interdit (403), jeton falsifié (401).
+- Flux SSE : premier événement `ready` pour savoir que la connexion est établie.
+- Angular 22 (composants standalone, signals, sans zone.js) : connexion, liste en direct avec compteurs
+  et filtres, détail (réparation proposée, diagnostic, preuves, étapes), Approuver/Refuser (admin + confirmation).
+- Temps réel avec `fetch` + parseur SSE (EventSource ne peut pas envoyer le jeton), reconnexion toutes les 5 s.
+- 10 tests Vitest (parseur SSE, libellés, connexion + intercepteur JWT).
+- Bug trouvé par les tests : le webhook Alertmanager envoie aussi un en-tête « Bearer » (son propre jeton) ;
+  Spring le lisait comme un JWT → 401. Correction : le lecteur de jetons JWT ignore l'URL du webhook.
+- Bug trouvé en test manuel : après plusieurs allers-retours liste ↔ détail, l'écran restait sur
+  « Reconnexion au flux… » / « Chargement… ». Cause : chaque page ouvrait son propre flux SSE ; le navigateur
+  limite à 6 connexions ouvertes par serveur. Correction : un seul flux partagé par onglet, abandon et
+  nouvelle tentative si pas de « ready » en 10 s, rechargement de la liste à chaque reconnexion.

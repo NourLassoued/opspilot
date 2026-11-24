@@ -1,0 +1,80 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <h1>Incidents</h1>
+      <p class="muted">
+        <span class="live" [class.on]="live()"></span>
+        {{ live() ? 'Mise à jour en direct' : 'Reconnexion au flux…' }}
+      </p>
+    </div>
+    @if (auth.isAdmin()) {
+      <button class="btn btn-primary" (click)="showForm.set(!showForm())">
+        {{ showForm() ? 'Fermer' : '+ Nouvelle enquête' }}
+      </button>
+    }
+  </header>
+
+  @if (showForm()) {
+    <form class="card form-row" (ngSubmit)="investigate()">
+      <label>Namespace <input name="ns" [(ngModel)]="namespace" required pattern="[a-z0-9-]{1,63}" /></label>
+      <label class="grow">Raison <input name="alert" [(ngModel)]="alert" required /></label>
+      <button class="btn btn-primary" type="submit" [disabled]="sending() || !namespace || !alert">
+        {{ sending() ? 'Envoi…' : "Lancer l'enquête" }}
+      </button>
+    </form>
+  }
+
+  <div class="stats">
+    <button class="stat" [class.active]="filter() === 'ALL'" (click)="filter.set('ALL')">
+      <span class="stat-n">{{ stats().total }}</span><span>Tous</span>
+    </button>
+    <button class="stat stat-warn" [class.active]="filter() === 'AWAITING_APPROVAL'" (click)="filter.set('AWAITING_APPROVAL')">
+      <span class="stat-n">{{ stats().waiting }}</span><span>À décider</span>
+    </button>
+    <button class="stat stat-info" [class.active]="filter() === 'OPEN'" (click)="filter.set('OPEN')">
+      <span class="stat-n">{{ stats().running }}</span><span>En cours</span>
+    </button>
+    <button class="stat stat-ok" [class.active]="filter() === 'RESOLVED'" (click)="filter.set('RESOLVED')">
+      <span class="stat-n">{{ stats().resolved }}</span><span>Résolus</span>
+    </button>
+    <button class="stat stat-bad" [class.active]="filter() === 'FAILED'" (click)="filter.set('FAILED')">
+      <span class="stat-n">{{ stats().failed }}</span><span>Échecs</span>
+    </button>
+  </div>
+
+  @if (error()) {
+    <p class="alert alert-bad" role="alert">{{ error() }} <button class="link" (click)="load()">Réessayer</button></p>
+  }
+
+  @if (loading()) {
+    <p class="muted center">Chargement…</p>
+  } @else if (visible().length === 0) {
+    <div class="card empty">
+      <p><b>Aucun incident ici.</b></p>
+      <p class="muted">Simule une alerte : <code>./scripts/simulate-alert.sh jobradar TestAlerte</code></p>
+    </div>
+  } @else {
+    <div class="card table-wrap">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Statut</th><th>Namespace</th><th>Alertes</th><th>Cause</th><th>Créé</th></tr>
+        </thead>
+        <tbody>
+          @for (i of visible(); track i.id) {
+            <tr (click)="open(i)" tabindex="0" (keydown.enter)="open(i)" [attr.aria-label]="'Incident ' + i.id">
+              <td class="mono">{{ i.id }}</td>
+              <td><app-status-badge [status]="i.status" /></td>
+              <td class="mono">{{ i.namespace }}</td>
+              <td>{{ i.alerts.join(', ') }}</td>
+              <td class="cause"><div class="clamp">
+                @if (i.category) {<span class="tag">{{ categories[i.category] ?? i.category }}</span>}
+                {{ i.rootCause ?? i.errorMessage ?? (i.status === 'INVESTIGATING' ? "L'agent enquête…" : '—') }}
+              </div></td>
+              <td class="muted nowrap">{{ ago(i.createdAt) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

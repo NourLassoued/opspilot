@@ -35,6 +35,8 @@ Les tables sont créées automatiquement au démarrage par Flyway (`db/migration
 | `AGENT_API_TOKEN` | Jeton pour `/remediate` (le **même** que dans `agent/.env`) | vide |
 | `ALERTMANAGER_TOKEN` | Jeton attendu sur le webhook | `change-me` |
 | `ADMIN_USER` / `ADMIN_PASSWORD` | Compte qui peut approuver | `admin` / `admin` |
+| `JWT_SECRET` | Clé de signature des jetons (≥ 32 caractères) | clé de dev |
+| `JWT_TTL_MINUTES` | Durée de validité d'un jeton | `60` |
 | `VIEWER_USER` / `VIEWER_PASSWORD` | Compte lecture seule | `viewer` / `viewer` |
 
 Ne jamais committer de vrais mots de passe : les définir dans le terminal (`export ...`).
@@ -52,11 +54,16 @@ Documentation interactive : http://localhost:8090/swagger-ui.html
 
 | Méthode | Chemin | Accès |
 |---|---|---|
+| POST | `/api/auth/login` | public : nom + mot de passe → jeton JWT |
+| GET | `/api/auth/me` | connecté |
 | POST | `/api/alerts/alertmanager` | jeton Alertmanager |
 | GET | `/api/incidents` , `/api/incidents/{id}` | VIEWER ou ADMIN |
 | GET | `/api/incidents/stream` (temps réel, SSE) | VIEWER ou ADMIN |
 | POST | `/api/incidents` (enquête manuelle) | ADMIN |
 | POST | `/api/incidents/{id}/approve` , `/reject` | ADMIN |
+
+Authentification : l'écran Angular utilise un **jeton JWT** (`Authorization: Bearer ...`) ;
+`curl -u admin:admin` (HTTP Basic) reste accepté pour les scripts.
 
 Cycle de vie : `INVESTIGATING → DIAGNOSED` ou `AWAITING_APPROVAL → EXECUTING → RESOLVED / FAILED`,
 ou `REJECTED`. Une réparation n'est **jamais** lancée sans approbation d'un ADMIN.

@@ -19,3 +19,6 @@ opspilot:
     viewer:
       username: viewer
       password: viewer-pass
+    jwt:
+      secret: test-secret-0123456789abcdef0123456789abcdef
+      ttl-minutes: 5

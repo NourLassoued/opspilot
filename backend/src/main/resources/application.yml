@@ -31,6 +31,10 @@ opspilot:
     viewer:
       username: ${VIEWER_USER:viewer}
       password: ${VIEWER_PASSWORD:viewer}
+    jwt:
+      # Clé de signature des jetons (au moins 32 caractères). En vrai : export JWT_SECRET=$(openssl rand -hex 32)
+      secret: ${JWT_SECRET:dev-only-secret-change-me-0123456789abcdef}
+      ttl-minutes: ${JWT_TTL_MINUTES:60}
 
 management:
   endpoints:

@@ -1,0 +1,22 @@
+<main class="login">
+  <form class="card login-card" (ngSubmit)="submit()">
+    <div class="brand brand-lg"><span class="logo">◆</span> OpsPilot</div>
+    <p class="muted">Agent IA de diagnostic d'incidents Kubernetes</p>
+
+    <label>Nom d'utilisateur
+      <input name="username" [(ngModel)]="username" autocomplete="username" required autofocus />
+    </label>
+    <label>Mot de passe
+      <input name="password" type="password" [(ngModel)]="password" autocomplete="current-password" required />
+    </label>
+
+    @if (error()) {
+      <p class="alert alert-bad" role="alert">{{ error() }}</p>
+    }
+
+    <button class="btn btn-primary" type="submit" [disabled]="loading() || !username || !password">
+      {{ loading() ? 'Connexion…' : 'Se connecter' }}
+    </button>
+    <p class="hint">Rôles : <b>viewer</b> consulte, <b>admin</b> approuve les réparations.</p>
+  </form>
+</main>
